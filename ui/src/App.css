@@ -1,0 +1,35 @@
+.labeler-container {
+  width: 60%;
+  min-width: 600px;
+  height: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 30px;
+}
+.task-options {
+  margin-top: 100px;
+  width: 800px;
+  height: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.task-icon {
+  border: 3px solid #F0A07C;
+  border-radius: 20px;
+  margin-right: 30px;
+  margin-left: 30px;
+}
+.task-icon:hover{
+  border: 3px solid #4A274F;
+  cursor: pointer;
+}
+.text-div {
+  text-align: center;
+  width: 100%;
+  font-size: 25px;
+  font-family: sans-serif;
+  padding-top: 20px;
+}
+.white-text {
+  color: #4A274F;
+}
