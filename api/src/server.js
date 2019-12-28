@@ -1,11 +1,13 @@
 const express = require('express');
 const server = express();
-const port = 8001;
+const PORT = process.env.PORT || 8001;
 
-server.get("/api/json", (req, res) => {
-  res.json({message: "Hello world" });
-});
+server.use(express.json());
 
-server.listen(port, () => {
-  console.log(`Server listening at port ${port}`);
+var api = require('./api.js');
+
+server.use('/api', api);
+
+server.listen(PORT, () => {
+  console.log(`Server listening at port ${PORT}`);
 });

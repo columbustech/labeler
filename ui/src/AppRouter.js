@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import { HashRouter as Router, Route, Switch} from 'react-router-dom';
 import Create from './Create';
 import Perform from './Perform';
 import Monitor from './Monitor';
@@ -10,10 +10,10 @@ class AppRouter extends React.Component {
         return(
             <Router>
                 <Switch>
-                    <Route path="/" component={App} />
                     <Route path="/create/" component={Create} />
                     <Route path="/monitor/" component={Monitor} />
                     <Route path="/perform/" component={Perform} />
+                    <Route path="/" component={App} />
                 </Switch>
             </Router>
         );

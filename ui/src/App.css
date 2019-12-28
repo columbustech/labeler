@@ -1,10 +1,10 @@
 .labeler-container {
   width: 60%;
   min-width: 600px;
-  height: 800px;
+  height: 500px;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 30px;
+  margin-top: 50px;
 }
 .task-options {
   margin-top: 100px;
@@ -32,4 +32,7 @@
 }
 .white-text {
   color: #4A274F;
+}
+.thumbnail-link {
+  display: block;
 }
