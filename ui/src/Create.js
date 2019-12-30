@@ -1,7 +1,10 @@
 import React from 'react';
 import axios from 'axios';
+import Cookies from 'universal-cookie';
 import TaskInit from './TaskInit';
 import CDrivePathSelector from './CDrivePathSelector';
+import Loading from './Loading';
+import Success from './Success';
 import './App.css';
 import './Create.css';
 
@@ -14,7 +17,8 @@ class Create extends React.Component {
       labelsPath: "",
       taskName: "",
       template: "",
-      specs: ""
+      specs: "",
+      isExecuting: false
     };
     this.getSpecs = this.getSpecs.bind(this);
     this.onTaskInit = this.onTaskInit.bind(this);
@@ -50,8 +54,27 @@ class Create extends React.Component {
   }
   onLabelsPathSelect(path) {
     this.setState({
-      labelsPath: path
+      labelsPath: path,
+      isExecuting: true,
+      activeStepIndex: this.state.activeStepIndex + 1
     });
+    const cookies = new Cookies();
+    const request = axios({
+      method: 'POST',
+      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/create-task`,
+      data: {
+        taskName: this.state.taskName,
+        template: this.state.template,
+        examplesPath: this.state.examplesPath,
+        labelsPath: path,
+        accessToken: cookies.get('labeler_token')
+      }
+    });
+    request.then(
+      response => {
+        this.setState({isExecuting: false});
+      },
+    );
   }
   nextStep() {
     this.setState({activeStepIndex: this.state.activeStepIndex + 1});
@@ -73,17 +96,26 @@ class Create extends React.Component {
         break;
       case 1:
         component = (
-          <CDrivePathSelector specs={this.state.specs} primaryFn={this.onExamplesPathSelect} 
+          <CDrivePathSelector specs={this.state.specs} primaryFn={this.onExamplesPathSelect} key="2"
             primaryBtn={"Select this folder"} secondaryFn={this.previousStep} secondaryBtn={"Back"} />
         );
         header = "Step 2: Select folder containing html files for examples";
         break;
       case 2:
         component = (
-          <CDrivePathSelector specs={this.state.specs} primaryFn={this.onLabelsPathSelect} 
-            primaryBtn={"Create Task"} secondaryFn={this.previousStep} secondaryBtn={"Back"} />
+          <CDrivePathSelector specs={this.state.specs} primaryFn={this.onLabelsPathSelect} key="3"
+            primaryBtn={"Create Task"} secondaryFn={this.previousStep} secondaryBtn={"Back"} fileSelector={true} />
         );
         header = "Step 3: Select CSV file containing possible label values";
+        break;
+      case 3:
+        if (this.state.isExecuting) {
+          header = `Creating Task`;
+          component = <Loading message={`Creating task ${this.state.taskName} ...`} />
+        } else {
+          header = 'Task Created!';
+          component = <Success message={`Task ${this.state.taskName} has been created`} />
+        }
         break;
       default:
         component = "";

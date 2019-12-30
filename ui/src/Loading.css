@@ -1,0 +1,13 @@
+.size-hundred{
+  width: 100%;
+  height: 100%;
+}
+.flex-div {
+  display: flex;
+}
+.colored-display {
+  color: #4A274F;
+}
+.large-font {
+  font-size: larger;
+}

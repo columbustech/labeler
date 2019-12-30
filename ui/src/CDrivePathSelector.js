@@ -9,13 +9,18 @@ class CDrivePathSelector extends React.Component {
     super(props);
     this.state = {
       path: "users",
-      driveObjects: []
+      driveObjects: [],
+      selectedIndex: -1,
+      fileSelector: true
     };
     this.getDriveObjects = this.getDriveObjects.bind(this);
     this.breadcrumbClick = this.breadcrumbClick.bind(this);
     this.listClick = this.listClick.bind(this);
+    this.selectPath = this.selectPath.bind(this);
   }
   componentDidMount() {
+    var fileSelector = this.props.fileSelector ? true : false;
+    this.setState({fileSelector: fileSelector});
     this.getDriveObjects("users/" + this.props.specs.username);
   }
   getDriveObjects(path) {
@@ -51,6 +56,18 @@ class CDrivePathSelector extends React.Component {
     if (this.state.driveObjects[index].type === "Folder") {
       newPath = this.state.path + "/" + this.state.driveObjects[index].name;
       this.getDriveObjects(newPath);
+    } else if (this.state.fileSelector && (this.state.driveObjects[index].type === "File")) {
+      newPath = this.state.path + "/" + this.state.driveObjects[index].name;
+      this.setState({selectedIndex:index});
+    }
+  }
+  selectPath() {
+    if (this.state.fileSelector) {
+      var fileName = this.state.driveObjects[this.state.selectedIndex].name;
+      var newPath = this.state.path + "/" + fileName;
+      this.props.primaryFn(newPath);
+    } else {
+      this.props.primaryFn(this.state.path);
     }
   }
   render() {
@@ -93,16 +110,29 @@ class CDrivePathSelector extends React.Component {
             </div>
           );
         } else {
-          return (
-            <div  className="file-item drive-item">
-              <div>
-                <FaFile size={60} color="#9c9c9c" />
+          if (i === this.state.selectedIndex) {
+            return (
+              <div  className="file-item drive-item" onClick={e => this.listClick(e, i)}>
+                <div className="selected-item">
+                  <FaFile size={60} color="#9c9c9c" />
+                </div>
+                <div className="drive-item-name selected-item">
+                  {name}
+                </div>
               </div>
-              <div className="drive-item-name">
-                {name}
-              </div>
-            </div>
             );
+          } else {
+            return (
+              <div  className="file-item drive-item" onClick={e => this.listClick(e, i)}>
+                <div>
+                  <FaFile size={60} color="#9c9c9c" />
+                </div>
+                <div className="drive-item-name">
+                  {name}
+                </div>
+              </div>
+            );
+          }
         }
       });
     }
@@ -118,7 +148,7 @@ class CDrivePathSelector extends React.Component {
         </div>
         <div className="select-submit" >
           <div className="select-btn">
-            <button className="btn btn-primary btn-lg btn-block" onClick={() => this.props.primaryFn(this.state.path)} >
+            <button className="btn btn-primary btn-lg btn-block" onClick={this.selectPath} >
               {this.props.primaryBtn}
             </button>
           </div>

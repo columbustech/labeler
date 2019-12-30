@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script
+		src="https://code.jquery.com/jquery-3.4.1.min.js"
+		integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+		crossorigin="anonymous">
+	</script>
+  <script src="https://unpkg.com/papaparse@5.1.1/papaparse.min.js"></script>
+</head>
+<body>
+  <div id="example-container">
+  </div>
+  <script>
+    var tableA, tableB, examples;
+
+    function getUrlParameter(name) {
+			name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+			var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+			var results = regex.exec(location.search);
+			return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+		}
+
+    function createHtmlTable(colNames, rowData) {
+      var table = $('<table>');
+      var header = $('<tr>');
+      colNames.forEach(colName => {
+        var cell = $('<th>').text(colName);
+        header.append(cell);
+      });
+      table.append(header);
+
+      var row = $('<tr>');
+      rowData.forEach(cellValue => {
+        var cell = $('<td>').text(cellValue);
+        row.append(cell);
+      });
+      table.append(row);
+      return table;
+    }
+
+    function getTableA(a_name, b_name) {
+      Papa.parse(a_name + ".csv", {
+        download: true,
+        complete: function(results) {
+          tableA = results;
+          getTableB(b_name);
+        }
+      });
+    }
+
+    function getTableB(b_name) {
+      Papa.parse(b_name + ".csv", {
+        download: true,
+        complete: function(results) {
+          tableB = results;
+          
+          var eid = parseInt(getUrlParameter("id"));
+          var aid = parseInt(examples["data"][eid][0]);
+          var bid = parseInt(examples["data"][eid][1]);
+
+          tableAHtml = createHtmlTable(tableA["data"][0], tableA["data"][aid]);
+          $("#example-container").append(tableAHtml);
+          tableBHtml = createHtmlTable(tableB["data"][0], tableB["data"][bid]);
+          $("#example-container").append(tableBHtml);
+        }
+      });
+    }
+
+    Papa.parse("examples.csv", {
+      download: true,
+      complete: function(results) {
+        examples = results;
+        var a_name = examples["data"][0][0];
+        var b_name = examples["data"][0][1];
+        getTableA(a_name, b_name);
+      }
+    });
+  </script>
+</body>
+</html>

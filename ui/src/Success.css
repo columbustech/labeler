@@ -1,0 +1,12 @@
+.size-hundred{
+  width: 100%;
+  height: 100%;
+}
+.navigation-options {
+  text-align: center;
+  width: 100%;
+  margin-top: 30px;
+}
+.large-font {
+  font-size: larger;
+}
