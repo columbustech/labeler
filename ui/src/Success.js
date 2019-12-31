@@ -10,7 +10,7 @@ class Success extends React.Component {
           {this.props.message}
         </div>
         <div className="navigation-options">
-          <Link className="btn btn-primary btn-lg" to="/perform/" >
+          <Link className="btn btn-primary btn-lg" to={{pathname:"/perform/", specs:this.props.specs}} >
             Perform Task
           </Link>
           <Link className="btn btn-secondary btn-lg ml-5" to="/" >

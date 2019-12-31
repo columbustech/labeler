@@ -3,6 +3,7 @@ const request = require('request');
 const fs = require('fs');
 const router = express.Router();
 const mongo = require('mongodb').MongoClient;
+const csv = require('csv-parser');
 const publicPath = '/storage/public/';
 const templatesPath = '/storage/templates/';
 
@@ -128,13 +129,77 @@ router.post('/create-task', function(req, res) {
     }
     processFolder(folderStruct, publicPath + taskName);
     Promise.all(promises).then(() => {
-      var optionsPromise = asyncCDriveDownload(labelsPath, `${publicPath}${taskName}/options.csv`);
-      optionsPromise.then(() => {
-        res.json({
-          message: 'success'
+      exampleCount = 0;
+      fs.createReadStream(`${publicPath}${taskName}/examples.csv`).pipe(csv()).on('data', (row) => {
+        exampleCount++;
+      }).on('end', () => {
+        const mongoUrl = 'mongodb://localhost:27017';
+        mongo.connect(mongoUrl, function(connectErr, client) {
+          const db = client.db('labeler');
+          const collection = db.collection('tasks');
+          collection.insertOne({taskName: taskName, count: exampleCount}, (insertErr, insertResult) => {
+            const taskCollection = db.collection(taskName);
+            var exampleDocs = Array.apply(null, Array(exampleCount)).map(function(_, i) {
+              return ({
+                exampleNo: i+1,
+                label: ""
+              });
+            });
+            taskCollection.insertMany(exampleDocs, (labelErr, labelResult) => {
+              client.close();
+              var optionsPromise = asyncCDriveDownload(labelsPath, `${publicPath}${taskName}/options.json`);
+              optionsPromise.then(() => {
+                res.json({
+                  message: 'success'
+                });
+              });
+            });
+          });
         });
       });
     });
+  });
+});
+
+router.get('/list-tasks', function(req, res) {
+  const mongoUrl = 'mongodb://localhost:27017';
+  mongo.connect(mongoUrl, function(connectErr, client) {
+    const db = client.db('labeler');
+    const collection = db.collection('tasks');
+    collection.find({}, {fields: {taskName: 1, _id: 0}}).toArray(function(err, results) {
+      client.close();
+      res.json({
+        tasks: results
+      });
+    });
+  });
+});
+
+router.get('/next-example', function(req, res) {
+  const taskName = req.query.taskName;
+  const mongoUrl = 'mongodb://localhost:27017';
+  mongo.connect(mongoUrl, function(connectErr, client) {
+    const db = client.db('labeler');
+    const taskCollection = db.collection(taskName);
+    taskCollection.findOne({label: ""}, function(exampleErr, exampleDoc) {
+      client.close();
+      if(exampleDoc) {
+        res.json({
+          exampleNo: exampleDoc.exampleNo
+        });
+      } else {
+        res.json({
+          exampleNo: -1
+        });
+      }
+    });
+  });
+});
+
+router.get('/label-options', function(req, res) {
+  const taskName = req.query.taskName;
+  fs.readFile(`${publicPath}${taskName}/options.json`, (err, data) => {
+    res.json(JSON.parse(data));
   });
 });
 

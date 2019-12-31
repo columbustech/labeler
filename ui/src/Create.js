@@ -114,7 +114,7 @@ class Create extends React.Component {
           component = <Loading message={`Creating task ${this.state.taskName} ...`} />
         } else {
           header = 'Task Created!';
-          component = <Success message={`Task ${this.state.taskName} has been created`} />
+          component = <Success specs={this.state.specs} message={`Task ${this.state.taskName} has been created`} />
         }
         break;
       default:

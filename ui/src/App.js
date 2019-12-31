@@ -88,7 +88,7 @@ class App extends React.Component {
                 </td>
                 <td>
                   <div className="task-icon">
-                    <Link to="perform/" className="thumbnail-link">
+                    <Link to={{ pathname: "perform/", specs:this.state.specs}}  className="thumbnail-link">
                       <FaTasks style={{margin: 50 }} size={100} color="#4A274F" />
                     </Link>
                   </div>
