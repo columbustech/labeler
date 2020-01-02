@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" 
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    html {
+      border: 3px solid #4A274F;
+    }
+    #example-container {
+      padding: 10px;
+    }
+    .em-tuple {
+      border-color: #4A274F;
+      color: #4A274F;
+    }
+    .primary-text {
+      color: #4A274F;
+    }
+  </style>
 	<script
 		src="https://code.jquery.com/jquery-3.4.1.min.js"
 		integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
@@ -22,7 +44,7 @@
 		}
 
     function createHtmlTable(colNames, rowData) {
-      var table = $('<table>');
+      var table = $('<table>').addClass("em-tuple table table-bordered");
       var header = $('<tr>');
       colNames.forEach(colName => {
         var cell = $('<th>').text(colName);
@@ -59,6 +81,8 @@
           var aid = parseInt(examples["data"][eid][0]);
           var bid = parseInt(examples["data"][eid][1]);
 
+          var tupleHeader = $('<h1>').text('Do the two tuples match?').addClass('h5 mb-4 text-center primary-text');
+          $('#example-container').append(tupleHeader);
           tableAHtml = createHtmlTable(tableA["data"][0], tableA["data"][aid]);
           $("#example-container").append(tableAHtml);
           tableBHtml = createHtmlTable(tableB["data"][0], tableB["data"][bid]);

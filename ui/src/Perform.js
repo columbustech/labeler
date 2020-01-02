@@ -1,6 +1,7 @@
 import React from 'react';
 import axios from 'axios';
 import { Link } from "react-router-dom";
+import { FaArrowLeft } from 'react-icons/fa';
 import './Perform.css';
 
 class Perform extends React.Component {
@@ -57,8 +58,8 @@ class Perform extends React.Component {
       let tasks;
       tasks = this.state.taskList.map((task, i) => {
         return (
-          <Link to={{pathname: "/example/", specs: this.state.specs, taskName:task.taskName}} className="list-group-item custom-lgi list-group-item-action">
-            {task.taskName}
+          <Link key={i} to={{pathname: "/example/", specs: this.state.specs, taskName:task.taskName}} className="list-group-item custom-lgi list-group-item-action">
+            {`${i+1}. ${task.taskName}`}
           </Link>
         );
       });
@@ -70,6 +71,11 @@ class Perform extends React.Component {
       }
       return(
         <div className="task-container"> 
+          <div className="home-link-container">
+            <Link to={{ pathname: "/", specs:this.state.specs }}>
+              <FaArrowLeft size={25} color="#4A274F" />
+            </Link>
+          </div>
           <h1 className="h3 mb-3 font-weight-bold text-center header-text">Select a Labeling Task</h1>
           <div className="task-list-container">
             <div className="list-group custom-list-group">
