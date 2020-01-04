@@ -99,6 +99,9 @@ router.post('/create-task', function(req, res) {
     let folderStruct = JSON.parse(body).driveObjects;
     async function asyncCDriveDownload(cDrivePath, localPath) {
       return new Promise(resolve => {
+        if(fs.existsSync(localPath)) {
+          resolve(true);
+        }
         var downloadUrlOptions = {
           url: `${process.env.CDRIVE_API_URL}download/?path=${cDrivePath}`,
           method: 'GET',
@@ -108,16 +111,17 @@ router.post('/create-task', function(req, res) {
         };
         request(downloadUrlOptions, function(urlErr, urlRes, urlBody) {
           if(urlErr) {
-            return res.status(urlErr.statusCode).json({
-              error: 'CDrive download error'
-            });
+            resolve(asyncCDriveDownload(cDrivePath, localPath));
           }
-          let downloadUrl = JSON.parse(urlBody).download_url;
-          request.get(downloadUrl).pipe(fs.createWriteStream(localPath).on('finish', function() {
-            resolve(true);
-          }));
+          try {
+            let downloadUrl = JSON.parse(urlBody).download_url;
+            request.get(downloadUrl).pipe(fs.createWriteStream(localPath).on('finish', function() {
+              resolve(true);
+            }));
+          } catch (someError) {
+            resolve(asyncCDriveDownload(cDrivePath, localPath));
+          }
         });
-
       });
     }
     const promises = []
@@ -131,36 +135,54 @@ router.post('/create-task', function(req, res) {
       });
     }
     processFolder(folderStruct, publicPath + taskName);
-    Promise.all(promises).then(() => {
-      exampleCount = 0;
-      fs.createReadStream(`${publicPath}${taskName}/examples.csv`).pipe(csv()).on('data', (row) => {
-        exampleCount++;
-      }).on('end', () => {
-        const mongoUrl = 'mongodb://localhost:27017';
-        mongo.connect(mongoUrl, function(connectErr, client) {
-          const db = client.db('labeler');
-          const collection = db.collection('tasks');
-          collection.insertOne({taskName: taskName, count: exampleCount}, (insertErr, insertResult) => {
-            const taskCollection = db.collection(taskName);
-            var exampleDocs = Array.apply(null, Array(exampleCount)).map(function(_, i) {
-              return ({
-                exampleNo: i+1,
-                label: ""
-              });
+
+    async function createTask(exampleCount) {
+      const mongoUrl = 'mongodb://localhost:27017';
+      mongo.connect(mongoUrl, function(connectErr, client) {
+        const db = client.db('labeler');
+        const collection = db.collection('tasks');
+        collection.insertOne({taskName: taskName, count: exampleCount}, (insertErr, insertResult) => {
+          const taskCollection = db.collection(taskName);
+          var exampleDocs = Array.apply(null, Array(exampleCount)).map(function(_, i) {
+            return ({
+              exampleNo: i+1,
+              label: ""
             });
-            taskCollection.insertMany(exampleDocs, (labelErr, labelResult) => {
-              client.close();
-              var optionsPromise = asyncCDriveDownload(labelsPath, `${publicPath}${taskName}/options.json`);
-              optionsPromise.then(() => {
-                res.json({
-                  message: 'success'
-                });
-              });
-            });
+          });
+          return taskCollection.insertMany(exampleDocs).then((labelErr, labelResult) => {
+            client.close();
           });
         });
       });
+    }
+
+    function processLabels() {
+      var optionsPromise = asyncCDriveDownload(labelsPath, `${publicPath}${taskName}/options.json`);
+      optionsPromise.then(() => {
+      });
+    }
+
+    Promise.all(promises).then(() => {
+      if (template === 'EM') {
+        var exampleCount = 0;
+        fs.createReadStream(`${publicPath}${taskName}/examples.csv`).pipe(csv()).on('data', (row) => {
+          exampleCount++;
+        }).on('end', () => {
+          var p = createTask(exampleCount);
+          p.then(() => processLabels());
+        });
+      } else if (template == 'None') {
+        var exampleCount = 0;
+        fs.readdir(`${publicPath}${taskName}`, (err, files) => {
+          exampleCount = files.length - 1;
+          var p = createTask(exampleCount);
+          p.then(() => processLabels());
+        });
+      }
     });
+  });
+  res.json({
+    message: 'success'
   });
 });
 
@@ -196,6 +218,19 @@ router.get('/next-example', function(req, res) {
         });
       }
     });
+  });
+});
+
+router.get('/task-creation-status', function(req, res) {
+  var taskName = req.query.taskName;
+  let taskStatus;
+  if (fs.existsSync(`${publicPath}${taskName}/options.json`)){
+    taskStatus = 'ready';
+  } else {
+    taskStatus = 'creating';
+  }
+  res.json({
+    taskStatus: taskStatus
   });
 });
 

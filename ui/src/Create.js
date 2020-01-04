@@ -18,12 +18,14 @@ class Create extends React.Component {
       taskName: "",
       template: "",
       specs: "",
-      isExecuting: false
+      isExecuting: false,
+      taskStatusPollId: 0
     };
     this.getSpecs = this.getSpecs.bind(this);
     this.onTaskInit = this.onTaskInit.bind(this);
     this.onExamplesPathSelect = this.onExamplesPathSelect.bind(this);
     this.onLabelsPathSelect = this.onLabelsPathSelect.bind(this);
+    this.taskStatusPoll = this.taskStatusPoll.bind(this);
     this.nextStep = this.nextStep.bind(this);
     this.previousStep = this.previousStep.bind(this);
   }
@@ -52,6 +54,22 @@ class Create extends React.Component {
       activeStepIndex: this.state.activeStepIndex + 1
     });
   }
+  taskStatusPoll() {
+    const request = axios({
+      method: 'GET',
+      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/task-creation-status?taskName=${this.state.taskName}`,
+    });
+    request.then(
+      response => {
+        if(response.data.taskStatus === "ready") {
+          clearInterval(this.state.taskStatusPollId);
+          this.setState({
+            isExecuting: false
+          });
+        }
+      },
+    );
+  }
   onLabelsPathSelect(path) {
     this.setState({
       labelsPath: path,
@@ -72,7 +90,9 @@ class Create extends React.Component {
     });
     request.then(
       response => {
-        this.setState({isExecuting: false});
+        this.setState({
+          taskStatusPollId: setInterval(() => this.taskStatusPoll(), 1000)
+        });
       },
     );
   }
