@@ -255,10 +255,31 @@ router.post('/save', function(req, res) {
   var path = req.body.path;
   var accessToken = req.body.accessToken;
 
-  function uploadToCDrive() {
+  function uploadComplete(uploadErr, uploadRes, uploadBody) {
     res.json({
-      message: 'success'
+      message: "success"
     });
+  }
+
+  function uploadToCDrive() {
+    const uploadOptions = {
+      url: `${process.env.CDRIVE_API_URL}upload/`,
+      method: 'POST',
+      formData: {
+        path: `${path}`,
+        file: {
+          value: fs.createReadStream(`${publicPath}${taskName}/labeledExamples.csv`),
+          options: {
+            filename: 'labeledExamples.csv',
+            contentType: 'text/csv'
+          }
+        }
+      },
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    };
+    request(uploadOptions, uploadComplete);
   }
 
   function saveLabels(results) {
@@ -274,7 +295,6 @@ router.post('/save', function(req, res) {
 
   function onConnectToDB(err, client) {
     const db = client.db('labeler');
-    console.log(taskName);
     const collection = db.collection(taskName);
     collection.find({}).toArray().then(function(results) {
       client.close();

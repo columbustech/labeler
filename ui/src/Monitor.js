@@ -4,6 +4,7 @@ import Cookies from 'universal-cookie';
 import { Link } from "react-router-dom";
 import { FaArrowLeft, FaTrash, FaDownload } from 'react-icons/fa';
 import CDrivePathSelector from './CDrivePathSelector';
+import Loading from './Loading';
 import './Monitor.css';
 
 class Monitor extends React.Component {
@@ -13,7 +14,8 @@ class Monitor extends React.Component {
       taskList: [],
       specs: {},
       fetchComplete: false,
-      selectedTaskName: ""
+      selectedTaskName: "",
+      saveStatus: ""
     };
     this.getSpecs = this.getSpecs.bind(this);
     this.fetchTasks = this.fetchTasks.bind(this);
@@ -68,6 +70,7 @@ class Monitor extends React.Component {
     });
   }
   saveTask(path) {
+    this.setState({saveStatus: "saving"});
     const cookies = new Cookies();
     const request = axios({
       method: 'POST',
@@ -81,13 +84,16 @@ class Monitor extends React.Component {
     request.then(
       response => {
         this.setState({
-          selectedTaskName: ""
+          saveStatus: "saved",
         });
       },
     );
   }
   cancelSave() {
-    this.setState({selectedTaskName: ""});
+    this.setState({
+      selectedTaskName: "",
+      saveStatus: ""
+    });
   }
   componentDidMount() {
     if (this.props.location && (this.props.location.specs)) {
@@ -102,6 +108,33 @@ class Monitor extends React.Component {
     } else if (!this.state.fetchComplete) {
       this.fetchTasks();
       return(null);
+    } else if (this.state.saveStatus === "saving") {
+      return(
+        <div className="path-selector-container">
+          <h1 className="h3 mb-3 font-weight-bold text-center header-text">Saving to CDrive</h1>
+          <Loading message={`Saving labels for task ${this.state.selectedTaskName} to CDrive`} />
+        </div>
+      );
+    } else if (this.state.saveStatus === "saved") {
+      console.log("reached here");
+      return(
+        <div className="path-selector-container">
+          <h1 className="h3 mb-3 font-weight-bold text-center header-text">Saved!</h1>
+          <div className="size-hundred">
+            <div className="large-font text-center m-auto">
+              Labels {"for"} task {this.state.selectedTaskName} have been saved to CDrive
+            </div>
+            <div className="navigation-options">
+              <a className="btn btn-primary btn-lg" href={this.state.specs.cdriveUrl}>
+                View {"in"} CDrive
+              </a>
+              <button className="btn btn-secondary btn-lg ml-5" onClick={this.cancelSave} >
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
+      );
     } else if (this.state.selectedTaskName !== "") {
       return (
         <div className="path-selector-container">
