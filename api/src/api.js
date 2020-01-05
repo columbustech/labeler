@@ -6,7 +6,8 @@ const router = express.Router();
 const mongo = require('mongodb').MongoClient;
 const csv = require('csv-parser');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const FormData = require('form-data');
+const unzip = require('zlib').createUnzip();
+const tar = require('tar-stream');
 const publicPath = '/storage/public/';
 const templatesPath = '/storage/templates/';
 
@@ -97,6 +98,26 @@ router.post('/create-task', function(req, res) {
       });
     }
     let folderStruct = JSON.parse(body).driveObjects;
+    async function extractTarball(localPath) {
+      var folderPath = localPath.substring(0,localPath.lastIndexOf('/'));
+      return new Promise(resolve => {
+        var extract = tar.extract()
+        extract.on('entry', function(header, stream, next) {
+          var filePath = folderPath + header.name.substring(1);
+          console.log(filePath);
+          stream.on('end', function() {
+            next();
+          });
+          stream.pipe(fs.createWriteStream(filePath));
+        });
+        extract.on('finish', function() {
+          fs.unlinkSync(localPath);
+          resolve(true);
+        });
+
+        fs.createReadStream(localPath).pipe(unzip).pipe(extract);
+      });
+    }
     async function asyncCDriveDownload(cDrivePath, localPath) {
       return new Promise(resolve => {
         if(fs.existsSync(localPath)) {
@@ -116,7 +137,11 @@ router.post('/create-task', function(req, res) {
           try {
             let downloadUrl = JSON.parse(urlBody).download_url;
             request.get(downloadUrl).pipe(fs.createWriteStream(localPath).on('finish', function() {
-              resolve(true);
+              if (localPath.endsWith('.tar.gz')) {
+                resolve(extractTarball(localPath));
+              } else {
+                resolve(true);
+              }
             }));
           } catch (someError) {
             resolve(asyncCDriveDownload(cDrivePath, localPath));
@@ -167,7 +192,7 @@ router.post('/create-task', function(req, res) {
       } else if (template == 'None') {
         var exampleCount = 0;
         fs.readdir(`${publicPath}${taskName}`, (err, files) => {
-          exampleCount = files.length - 1;
+          exampleCount = files.length - 2;
           createTask(exampleCount);
         });
       }
