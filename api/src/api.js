@@ -156,27 +156,19 @@ router.post('/create-task', function(req, res) {
       });
     }
 
-    function processLabels() {
-      var optionsPromise = asyncCDriveDownload(labelsPath, `${publicPath}${taskName}/options.json`);
-      optionsPromise.then(() => {
-      });
-    }
-
-    Promise.all(promises).then(() => {
+    Promise.all(promises).then(() => asyncCDriveDownload(labelsPath, `${publicPath}${taskName}/options.json`)).then(() => {
       if (template === 'EM') {
         var exampleCount = 0;
         fs.createReadStream(`${publicPath}${taskName}/examples.csv`).pipe(csv()).on('data', (row) => {
           exampleCount++;
         }).on('end', () => {
-          var p = createTask(exampleCount);
-          p.then(() => processLabels());
+          createTask(exampleCount);
         });
       } else if (template == 'None') {
         var exampleCount = 0;
         fs.readdir(`${publicPath}${taskName}`, (err, files) => {
           exampleCount = files.length - 1;
-          var p = createTask(exampleCount);
-          p.then(() => processLabels());
+          createTask(exampleCount);
         });
       }
     });
@@ -224,13 +216,21 @@ router.get('/next-example', function(req, res) {
 router.get('/task-creation-status', function(req, res) {
   var taskName = req.query.taskName;
   let taskStatus;
-  if (fs.existsSync(`${publicPath}${taskName}/options.json`)){
-    taskStatus = 'ready';
-  } else {
-    taskStatus = 'creating';
-  }
-  res.json({
-    taskStatus: taskStatus
+  const mongoUrl = 'mongodb://localhost:27017';
+  mongo.connect(mongoUrl, function(connectErr, client) {
+    const db = client.db('labeler');
+    db.listCollections().toArray(function(searchErr, searchRes) {
+      if (searchRes.find(item => {
+        return item.name === taskName
+      })) {
+        taskStatus = 'ready';
+      } else {
+        taskStatus = 'creating';
+      }
+      res.json({
+        taskStatus: taskStatus
+      });
+    });
   });
 });
 
