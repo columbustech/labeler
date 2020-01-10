@@ -3,6 +3,8 @@ import axios from 'axios';
 import Cookies from 'universal-cookie';
 import { Link } from "react-router-dom";
 import { FaArrowLeft, FaTrash, FaDownload } from 'react-icons/fa';
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
 import CDrivePathSelector from './CDrivePathSelector';
 import Loading from './Loading';
 import './Monitor.css';
@@ -20,6 +22,7 @@ class Monitor extends React.Component {
     this.getSpecs = this.getSpecs.bind(this);
     this.fetchTasks = this.fetchTasks.bind(this);
     this.deleteTask = this.deleteTask.bind(this);
+    this.clearLabels = this.clearLabels.bind(this);
     this.saveTask = this.saveTask.bind(this);
     this.saveClick = this.saveClick.bind(this);
     this.cancelSave = this.cancelSave.bind(this);
@@ -64,6 +67,20 @@ class Monitor extends React.Component {
       },
     );
   }
+  clearLabels(taskName) {
+    const request = axios({
+      method: 'POST',
+      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/clear`,
+      data: {
+        taskName: taskName
+      }
+    });
+    request.then(
+      response => {
+        this.fetchTasks();
+      },
+    );
+  }
   saveClick(taskName) {
     this.setState({
       selectedTaskName: taskName
@@ -98,6 +115,9 @@ class Monitor extends React.Component {
   componentDidMount() {
     if (this.props.location && (this.props.location.specs)) {
       this.setState({specs: this.props.location.specs});
+      if (this.props.location.selectedTaskName) {
+        this.setState({selectedTaskName: this.props.location.selectedTaskName});
+      }
     } else {
       this.getSpecs();
     }
@@ -116,7 +136,6 @@ class Monitor extends React.Component {
         </div>
       );
     } else if (this.state.saveStatus === "saved") {
-      console.log("reached here");
       return(
         <div className="path-selector-container">
           <h1 className="h3 mb-3 font-weight-bold text-center header-text">Saved!</h1>
@@ -146,24 +165,48 @@ class Monitor extends React.Component {
     } else {
       let tasks;
       tasks = this.state.taskList.map((task, i) => {
+        var ddItems = [];
+        var downloadUrl = `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/download?taskName=${task.taskName}`;
+        ddItems.push(
+          <Link to={{pathname: "/example/", specs: this.state.specs, taskName:task.taskName}} className="dropdown-item">
+            Launch
+          </Link>
+        );
+        ddItems.push(
+          <Dropdown.Item onClick={() => this.saveClick(task.taskName)} >
+            Download (CDrive)
+          </Dropdown.Item>
+        );
+        ddItems.push(
+          <a href={downloadUrl} className="dropdown-item">
+            Download (Local)
+          </a>
+        );
+        ddItems.push(
+          <Dropdown.Item onClick={() => this.clearLabels(task.taskName)} >
+            Clear Labels
+          </Dropdown.Item>
+        );
+        ddItems.push(
+          <Dropdown.Item onClick={() => this.deleteTask(task.taskName)} >
+            Delete
+          </Dropdown.Item>
+        );
         return(
           <tr key={i} className="monitor-task-row" >
             <td className="monitor-task-cell" >
               {task.taskName}
             </td>
-            <td className="monitor-task-cell text-center" >
-              {task.complete}
-            </td>
             <td className="monitor-task-cell text-center">
               {task.total}
             </td>
+            <td className="monitor-task-cell text-center" >
+              {task.complete}
+            </td>
             <td className="monitor-task-cell">
-              <button className="task-action-btn" onClick={() => this.saveClick(task.taskName)} >
-                <FaDownload size={25} color="#4A274F" />
-              </button>
-              <button className="task-action-btn" onClick={() => this.deleteTask(task.taskName)} >
-                <FaTrash size={25} color="#4A274F" />
-              </button>
+              <DropdownButton variant="transparent" title="" alignLeft >
+                {ddItems}
+              </DropdownButton>
             </td>
           </tr>
         );
@@ -175,14 +218,14 @@ class Monitor extends React.Component {
               <FaArrowLeft size={25} color="#4A274F" />
             </Link>
           </div>
-          <h1 className="h3 mb-3 font-weight-bold text-center header-text">Select a Labeling Task</h1>
+          <h1 className="h3 mb-3 font-weight-bold text-center header-text">Manage Tasks</h1>
           <div className="monitor-list-container">
             <table className="monitor-list-table">
               <thead>
                 <tr className="monitor-task-header-row">
                   <td className="monitor-task-header-cell task-name-header-cell">Task Name</td>
-                  <td className="monitor-task-header-cell">Labeled</td>
                   <td className="monitor-task-header-cell">Total</td>
+                  <td className="monitor-task-header-cell">Labeled</td>
                   <td className="monitor-task-header-cell">Actions</td>
                 </tr>
               </thead>

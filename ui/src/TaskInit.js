@@ -7,16 +7,21 @@ class TaskInit extends React.Component {
     super(props);
     this.state = {
       taskName: "",
-      template: "None"
+      template: "None",
+      uploadFrom: "CDrive",
     };
     this.taskNameChange = this.taskNameChange.bind(this);
     this.templateChange = this.templateChange.bind(this);
+    this.uploadChange = this.uploadChange.bind(this);
   }
   taskNameChange(e) {
     this.setState({taskName: e.target.value});
   }
   templateChange(e) {
     this.setState({template: e.target.value});
+  }
+  uploadChange(e) {
+    this.setState({uploadChange: e.target.value});
   }
   render() {
     return(
@@ -30,9 +35,14 @@ class TaskInit extends React.Component {
           <option value="EM">Entity Matching</option>
           <option value="SM">Schema Matching</option>
         </select>
+        <label htmlFor="upload-select">Upload From:</label>
+        <select onChange={this.uploadChange} id="upload-select" className="step-form-item">
+          <option value="CDrive">CDrive</option>
+          <option value="Local">Local</option>
+        </select>
         <div className="step-form-item step-buttons">
           <button className="btn btn-large btn-primary btn-st1" 
-            onClick={() => this.props.init(this.state.taskName, this.state.template)}>
+            onClick={() => this.props.init(this.state.taskName, this.state.template, this.state.uploadFrom)}>
             Next
           </button>
           <Link to="/" className="btn btn-large btn-secondary btn-st1">

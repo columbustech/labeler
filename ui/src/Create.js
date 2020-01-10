@@ -17,6 +17,7 @@ class Create extends React.Component {
       labelsPath: "",
       taskName: "",
       template: "",
+      uploadFrom: "",
       specs: "",
       isExecuting: false,
       taskStatusPollId: 0
@@ -41,11 +42,12 @@ class Create extends React.Component {
       },
     );
   }
-  onTaskInit(taskName, template) {
+  onTaskInit(taskName, template, uploadFrom) {
     this.setState({
       taskName: taskName,
       template: template,
-      activeStepIndex: this.state.activeStepIndex + 1
+      activeStepIndex: this.state.activeStepIndex + 1,
+      uploadFrom: uploadFrom
     });
   }
   onExamplesPathSelect(path) {
@@ -119,14 +121,14 @@ class Create extends React.Component {
           <CDrivePathSelector specs={this.state.specs} primaryFn={this.onExamplesPathSelect} key="2"
             primaryBtn={"Select this folder"} secondaryFn={this.previousStep} secondaryBtn={"Back"} />
         );
-        header = "Step 2: Select folder containing html files for examples";
+        header = "Step 2: Select the folder containing examples from CDrive";
         break;
       case 2:
         component = (
           <CDrivePathSelector specs={this.state.specs} primaryFn={this.onLabelsPathSelect} key="3"
             primaryBtn={"Create Task"} secondaryFn={this.previousStep} secondaryBtn={"Back"} fileSelector={true} />
         );
-        header = "Step 3: Select CSV file containing possible label values";
+        header = "Step 3: Select JSON file containing possible label values from CDrive";
         break;
       case 3:
         if (this.state.isExecuting) {
@@ -134,7 +136,7 @@ class Create extends React.Component {
           component = <Loading message={`Creating task ${this.state.taskName}, this may take a couple of minutes`} />
         } else {
           header = 'Task Created!';
-          component = <Success specs={this.state.specs} message={`Task ${this.state.taskName} has been created`} />
+          component = <Success specs={this.state.specs} message={`Task ${this.state.taskName} has been created`} taskName={this.state.taskName}/>
         }
         break;
       default:

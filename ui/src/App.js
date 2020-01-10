@@ -2,7 +2,7 @@ import React from 'react';
 import Cookies from 'universal-cookie';
 import axios from 'axios';
 import { Link } from "react-router-dom";
-import { FaPlus, FaTasks, FaDesktop } from 'react-icons/fa';
+import { FaPlus, FaTasks } from 'react-icons/fa';
 import './App.css';
 
 class App extends React.Component {
@@ -82,13 +82,6 @@ class App extends React.Component {
                 <td>
                   <div className="task-icon">
                     <Link to="monitor/" className="thumbnail-link" >
-                      <FaDesktop style={{margin: 50 }} size={100} color="#4A274F" />
-                    </Link>
-                  </div>
-                </td>
-                <td>
-                  <div className="task-icon">
-                    <Link to={{ pathname: "perform/", specs:this.state.specs}}  className="thumbnail-link">
                       <FaTasks style={{margin: 50 }} size={100} color="#4A274F" />
                     </Link>
                   </div>
@@ -102,12 +95,7 @@ class App extends React.Component {
                 </td>
                 <td>
                   <div className="text-div white-text">
-                    Monitor Tasks 
-                  </div>
-                </td>
-                <td>
-                  <div className="text-div white-text">
-                    Perform Task
+                    Manage Tasks
                   </div>
                 </td>
               </tr>

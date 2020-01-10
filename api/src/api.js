@@ -1,12 +1,11 @@
 const express = require('express');
 const request = require('request');
-const axios = require('axios');
 const fs = require('fs');
 const router = express.Router();
 const mongo = require('mongodb').MongoClient;
 const csv = require('csv-parser');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const unzip = require('zlib').createUnzip();
+const zlib = require('zlib');
 const tar = require('tar-stream');
 const publicPath = '/storage/public/';
 const templatesPath = '/storage/templates/';
@@ -101,10 +100,10 @@ router.post('/create-task', function(req, res) {
     async function extractTarball(localPath) {
       var folderPath = localPath.substring(0,localPath.lastIndexOf('/'));
       return new Promise(resolve => {
+        var unzip = zlib.createUnzip();
         var extract = tar.extract()
         extract.on('entry', function(header, stream, next) {
           var filePath = folderPath + header.name.substring(1);
-          console.log(filePath);
           stream.on('end', function() {
             next();
           });
@@ -328,9 +327,9 @@ router.post('/save', function(req, res) {
       formData: {
         path: `${path}`,
         file: {
-          value: fs.createReadStream(`${publicPath}${taskName}/labeledExamples.csv`),
+          value: fs.createReadStream(`${publicPath}${taskName}/labeled_examples.csv`),
           options: {
-            filename: 'labeledExamples.csv',
+            filename: 'labeled_examples.csv',
             contentType: 'text/csv'
           }
         }
@@ -344,10 +343,10 @@ router.post('/save', function(req, res) {
 
   function saveLabels(results) {
     const csvWriter = createCsvWriter({
-      path: `${publicPath}${taskName}/labeledExamples.csv`,
+      path: `${publicPath}${taskName}/labeled_examples.csv`,
       header: [
-        {id: 'exampleNo', title: 'Example Number'},
-        {id: 'label', title: 'Label'}
+        {id: 'exampleNo', title: 'example_no'},
+        {id: 'label', title: 'label'}
       ]
     });
     return csvWriter.writeRecords(results);
@@ -366,6 +365,36 @@ router.post('/save', function(req, res) {
 
 });
 
+router.get('/download', function(req, res) {
+  var taskName = req.query.taskName;
+
+  function saveComplete() {
+    res.download(`${publicPath}${taskName}/labeled_examples.csv`);
+  }
+
+  function saveLabels(results) {
+    const csvWriter = createCsvWriter({
+      path: `${publicPath}${taskName}/labeled_examples.csv`,
+      header: [
+        {id: 'exampleNo', title: 'Example Number'},
+        {id: 'label', title: 'Label'}
+      ]
+    });
+    return csvWriter.writeRecords(results);
+  }
+
+  function onConnectToDB(err, client) {
+    const db = client.db('labeler');
+    const collection = db.collection(taskName);
+    collection.find({}).toArray().then(function(results) {
+      client.close();
+      return results;
+    }).then(saveLabels).then(saveComplete);
+  }
+  const mongoUrl = 'mongodb://localhost:27017';
+  mongo.connect(mongoUrl, onConnectToDB);
+});
+
 router.post('/delete', function(req, res) {
   var taskName = req.body.taskName;
   const mongoUrl = 'mongodb://localhost:27017';
@@ -382,6 +411,22 @@ router.post('/delete', function(req, res) {
         res.json({
           message: 'success'
         });
+      });
+    });
+  }
+  mongo.connect(mongoUrl, onConnectToDB);
+});
+
+router.post('/clear', function(req, res) {
+  var taskName = req.body.taskName;
+  const mongoUrl = 'mongodb://localhost:27017';
+
+  function onConnectToDB(err, client) {
+    const db = client.db('labeler');
+    const taskCollection = db.collection(taskName);
+    taskCollection.updateMany({}, { $set: {label: ""} }, function(updateErr, updateRes) {
+      res.json({
+        message: 'success'
       });
     });
   }

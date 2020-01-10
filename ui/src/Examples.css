@@ -2,10 +2,16 @@
   height: 100%;
   width: 100%;
 }
-.home-link-container {
+.examples-header {
   width: 100%;
   height: 50px;
-  padding: 10px;
+}
+.actions-container {
+  float: left;
+  height: 50px;
+}
+.stat-container {
+  float: right;
 }
 .header-text {
   color: #4A274F;
@@ -32,6 +38,7 @@
 .example-iframe-container {
   height: 500px;
   width: 800px;
+  margin-top: 30px;
   margin-left: auto;
   margin-right: auto;
 }
