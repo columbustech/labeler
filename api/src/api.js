@@ -9,6 +9,7 @@ const zlib = require('zlib');
 const tar = require('tar-stream');
 const publicPath = '/storage/public/';
 const templatesPath = '/storage/templates/';
+const mongoUrl = 'mongodb://localhost:27017';
 
 router.get('/specs', function(req, res) {
   res.json({
@@ -161,7 +162,6 @@ router.post('/create-task', function(req, res) {
     processFolder(folderStruct, publicPath + taskName);
 
     async function createTask(exampleCount) {
-      const mongoUrl = 'mongodb://localhost:27017';
       mongo.connect(mongoUrl, function(connectErr, client) {
         const db = client.db('labeler');
         const collection = db.collection('tasks');
@@ -203,7 +203,6 @@ router.post('/create-task', function(req, res) {
 });
 
 router.get('/list-tasks', function(req, res) {
-  const mongoUrl = 'mongodb://localhost:27017';
   mongo.connect(mongoUrl, function(connectErr, client) {
     const db = client.db('labeler');
     const collection = db.collection('tasks');
@@ -218,7 +217,6 @@ router.get('/list-tasks', function(req, res) {
 
 router.get('/next-example', function(req, res) {
   const taskName = req.query.taskName;
-  const mongoUrl = 'mongodb://localhost:27017';
   mongo.connect(mongoUrl, function(connectErr, client) {
     const db = client.db('labeler');
     const taskCollection = db.collection(taskName);
@@ -240,7 +238,6 @@ router.get('/next-example', function(req, res) {
 router.get('/task-creation-status', function(req, res) {
   var taskName = req.query.taskName;
   let taskStatus;
-  const mongoUrl = 'mongodb://localhost:27017';
   mongo.connect(mongoUrl, function(connectErr, client) {
     const db = client.db('labeler');
     db.listCollections().toArray(function(searchErr, searchRes) {
@@ -269,7 +266,6 @@ router.post('/label-example', function(req, res) {
   var taskName = req.body.taskName;
   var exampleNo = req.body.exampleNo;
   var label = req.body.label;
-  const mongoUrl = 'mongodb://localhost:27017';
   mongo.connect(mongoUrl, function(connectErr, client) {
     const db = client.db('labeler');
     const taskCollection = db.collection(taskName);
@@ -283,7 +279,6 @@ router.post('/label-example', function(req, res) {
 });
 
 router.get('/list-tasks-detailed', function(req, res) {
-  const mongoUrl = 'mongodb://localhost:27017';
   mongo.connect(mongoUrl, function(connectErr, client) {
     const db = client.db('labeler');
     const collection = db.collection('tasks');
@@ -307,6 +302,49 @@ router.get('/list-tasks-detailed', function(req, res) {
       });
     });
   });
+});
+
+router.get('/task-stats', function(req, res) {
+  var taskName = req.query.taskName;
+  let total, labels;
+
+  async function getLabels(res, err) {
+    return new Promise(function(resolve, reject) {
+      if(err) {
+        console.log(err);
+      }
+      labels = res.filter(item => item !== '');
+      resolve(true);
+    });
+  }
+  async function getTotal(res) {
+    return new Promise (function(resolve, reject) {
+      total = res;
+      resolve(true);
+    });
+  }
+  function onConnectToDB(err, client) {
+    const db = client.db('labeler');
+    const taskCollection = db.collection(taskName);
+
+    taskCollection.countDocuments({}).then(getTotal).then(() => {
+      return taskCollection.distinct('label', {});
+    }).then(getLabels).then(() => {
+      const promises = [];
+      labels.forEach(label => {
+        promises.push(taskCollection.countDocuments({label: label}));
+      });
+      Promise.all(promises).then(values => {
+        res.json({
+          total: total,
+          labels: labels,
+          counts: values
+        });
+      });
+    });
+  }
+  mongo.connect(mongoUrl, onConnectToDB);
+
 });
 
 router.post('/save', function(req, res) {
@@ -360,7 +398,6 @@ router.post('/save', function(req, res) {
       return results;
     }).then(saveLabels).then(uploadToCDrive);
   }
-  const mongoUrl = 'mongodb://localhost:27017';
   mongo.connect(mongoUrl, onConnectToDB);
 
 });
@@ -391,13 +428,11 @@ router.get('/download', function(req, res) {
       return results;
     }).then(saveLabels).then(saveComplete);
   }
-  const mongoUrl = 'mongodb://localhost:27017';
   mongo.connect(mongoUrl, onConnectToDB);
 });
 
 router.post('/delete', function(req, res) {
   var taskName = req.body.taskName;
-  const mongoUrl = 'mongodb://localhost:27017';
 
   function onConnectToDB(err, client) {
     const db = client.db('labeler');
@@ -419,7 +454,6 @@ router.post('/delete', function(req, res) {
 
 router.post('/clear', function(req, res) {
   var taskName = req.body.taskName;
-  const mongoUrl = 'mongodb://localhost:27017';
 
   function onConnectToDB(err, client) {
     const db = client.db('labeler');

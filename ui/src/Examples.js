@@ -18,7 +18,8 @@ class Examples extends React.Component {
       isComplete: false,
       labelOptions: [],
       totalExamples: 0,
-      completeExamples: 0
+      completeExamples: 0,
+      labelCounts: [],
     };
     this.nextExample = this.nextExample.bind(this);
     this.labelExample = this.labelExample.bind(this);
@@ -64,16 +65,21 @@ class Examples extends React.Component {
   updateStats() {
     const request = axios({
       method: 'GET',
-      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/list-tasks-detailed`,
+      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/task-stats?taskName=${this.state.taskName}`,
     });
     request.then(
       response => {
-        const taskData = response.data.tasks.find(item => {
-          return (item.taskName === this.state.taskName)
+        var labelCounts = response.data.labels.map((label, i) => {
+          var ret = {};
+          ret.label = label;
+          ret.count = response.data.counts[i];
+          return ret;
         });
+        console.log(labelCounts);
         this.setState({
-          totalExamples: taskData.total,
-          completedExamples: taskData.complete
+          totalExamples: response.data.total,
+          completedExamples: response.data.counts.reduce((a,b) => a+b, 0),
+          labelCounts: labelCounts
         });
       },
     );
@@ -175,6 +181,9 @@ class Examples extends React.Component {
           Back
         </Link>
       );
+      var labelStr = this.state.labelCounts.map(item => {
+        return `${item.label}: ${item.count}`;
+      }).join(',');
       return (
         <div className="example-container">
           <div className="examples-header">
@@ -184,7 +193,7 @@ class Examples extends React.Component {
               </DropdownButton>
             </div>
             <div className="stat-container">
-              <h1 className="h5 m-2 header-text">Total: {this.state.totalExamples}, Completed: {this.state.completedExamples}</h1>
+              <h1 className="h5 m-2 header-text">Total: {this.state.totalExamples}, Completed: {this.state.completedExamples}, {labelStr}</h1>
             </div>
           </div>
           <h1 className="h3 mb-3 font-weight-bold text-center header-text">Example No: {this.state.exampleNo}</h1>
