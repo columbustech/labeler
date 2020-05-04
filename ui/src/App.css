@@ -1,40 +1,35 @@
-.labeler-container {
-  width: 60%;
-  min-width: 600px;
-  height: 500px;
+.app-container {
   margin-left: auto;
   margin-right: auto;
-  margin-top: 50px;
+  margin-top: 30px;
 }
-.task-options {
-  display: flex;
-  justify-content: center;
-  margin-top: 100px;
-  width: 800px;
-  height: 400px;
-  margin-left: auto;
-  margin-right: auto;
+.input-div {
+  width: 100%;
+  margin-bottom: 30px;
 }
-.task-icon {
-  border: 3px solid #D4D4D4;
-  border-radius: 20px;
-  margin-right: 30px;
-  margin-left: 30px;
+.cdrive-input-item {
+  min-width: 300px;
 }
-.task-icon:hover{
-  border: 3px solid #4A274F;
-  cursor: pointer;
+.number-input {
+  width: 40px;
 }
-.text-div {
+.app-header {
   text-align: center;
   width: 100%;
-  font-size: 25px;
-  font-family: sans-serif;
-  padding-top: 20px;
+  font-weight: 500;
+  font-size: 30px;
+  margin-bottom: 30px;
 }
-.white-text {
-  color: #4A274F;
+.blocker-btn {
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  padding-left: 30px;
+  padding-right: 30px;
 }
-.thumbnail-link {
-  display: block;
+.blocker-status {
+  width: 100%;
+  font-size: 20px;
+  margin: 15px;
 }

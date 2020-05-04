@@ -1,16 +1,14 @@
 import React from 'react';
 import Cookies from 'universal-cookie';
 import axios from 'axios';
-import { Link } from "react-router-dom";
-import { FaPlus, FaTasks } from 'react-icons/fa';
 import './App.css';
 
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      specs: {},
       isLoggedIn: false,
-      specs: {}
     };
     this.getSpecs = this.getSpecs.bind(this);
     this.authenticateUser = this.authenticateUser.bind(this);
@@ -28,21 +26,20 @@ class App extends React.Component {
   }
   authenticateUser() {
     const cookies = new Cookies();
-    var columbus_token = cookies.get('labeler_token');
-    if (columbus_token !== undefined) {
+    var accessToken = cookies.get('labeler_token');
+    if (accessToken !== undefined) {
       this.setState({isLoggedIn: true});
-      return(null);
+      return;
     }
-    var url_string = window.location.href;
-    var url = new URL(url_string);
+    var url = new URL(window.location.href);
     var code = url.searchParams.get("code");
-    var redirect_uri = this.state.specs.cdriveUrl + "app/" + this.state.specs.username + "/labeler/";
+    var redirect_uri = `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/`;
     if (code == null) {
-      window.location.href = this.state.specs.authUrl + "o/authorize/?response_type=code&client_id=" + this.state.specs.clientId + "&redirect_uri=" + redirect_uri + "&state=1234xyz";
+      window.location.href = `${this.state.specs.authUrl}o/authorize/?response_type=code&client_id=${this.state.specs.clientId}&redirect_uri=${redirect_uri}&state=1234xyz`;
     } else {
       const request = axios({
         method: 'POST',
-        url: redirect_uri + "api/access-token",
+        url: `${redirect_uri}api/access-token`,
         data: {
           code: code,
           redirect_uri: redirect_uri
@@ -51,9 +48,8 @@ class App extends React.Component {
       request.then(
         response => {
           cookies.set('labeler_token', response.data.access_token);
-          this.setState({isLoggedIn: true});
-        },
-        err => {
+          window.location.href = redirect_uri;
+        }, err => {
         }
       );
     }
@@ -61,45 +57,15 @@ class App extends React.Component {
   render() {
     if (Object.keys(this.state.specs).length === 0) {
       this.getSpecs();
-      return(null);
+      return (null);
     } else if (!this.state.isLoggedIn) {
       this.authenticateUser();
-      return(null);
+      return (null);
     } else {
       return(
-        <div className="labeler-container"> 
-          <h1 className="h2 mb-3 font-weight-bold text-center white-text">DATA LABELER</h1>
-          <div className="task-options">
-            <table>
-              <tr>
-                <td>
-                  <div className="task-icon">
-                    <Link to={{ pathname: "create/", state: {specs: this.state.specs} }} className="thumbnail-link">
-                      <FaPlus style={{margin: 50 }} size={100} color="#4A274F" />
-                    </Link>
-                  </div>
-                </td>
-                <td>
-                  <div className="task-icon">
-                    <Link to="monitor/" className="thumbnail-link" >
-                      <FaTasks style={{margin: 50 }} size={100} color="#4A274F" />
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="text-div white-text">
-                    Create Task
-                  </div>
-                </td>
-                <td>
-                  <div className="text-div white-text">
-                    Manage Tasks
-                  </div>
-                </td>
-              </tr>
-            </table>
+        <div className="app-container">
+          <div className="app-header">
+            Labeler
           </div>
         </div>
       );
