@@ -1,28 +1,20 @@
 import React from 'react';
 import Cookies from 'universal-cookie';
 import axios from 'axios';
-import './App.css';
+import Examples from './Examples';
+import Home from './Home';
 
 class App extends React.Component {
-  constructor(props) {
+  constructor(props){
     super(props);
     this.state = {
+      component: Home,
+      taskName: "",
       specs: {},
-      isLoggedIn: false,
+      isLoggedIn: false
     };
-    this.getSpecs = this.getSpecs.bind(this);
+    this.initPage = this.initPage.bind(this);
     this.authenticateUser = this.authenticateUser.bind(this);
-  }
-  getSpecs() {
-    const request = axios({
-      method: 'GET',
-      url: `${window.location.protocol}//${window.location.hostname}${window.location.pathname}api/specs`
-    });
-    request.then(
-      response => {
-        this.setState({specs: response.data});
-      },
-    );
   }
   authenticateUser() {
     const cookies = new Cookies();
@@ -54,20 +46,37 @@ class App extends React.Component {
       );
     }
   }
+  initPage() {
+    var tokens = window.location.pathname.split('/');
+    var newState = {};
+    if ((tokens.length>5) && (tokens[4] === "example")) {
+      newState['component'] = Examples;
+      newState['taskName'] = tokens[5];
+    } else {
+      newState['component'] = Home;
+      newState['taskName'] = "";
+    }
+    const request = axios({
+      method: 'GET',
+      url: `${window.location.protocol}//${window.location.hostname}/${tokens[1]}/${tokens[2]}/${tokens[3]}/api/specs`
+    });
+    request.then(
+      response => {
+        newState['specs'] = response.data;
+        this.setState(newState);
+      },
+    );
+  }
   render() {
     if (Object.keys(this.state.specs).length === 0) {
-      this.getSpecs();
+      this.initPage();
       return (null);
     } else if (!this.state.isLoggedIn) {
       this.authenticateUser();
       return (null);
     } else {
-      return(
-        <div className="app-container">
-          <div className="app-header">
-            Labeler
-          </div>
-        </div>
+      return (
+        <this.state.component specs={this.state.specs} taskName={this.state.taskName} />
       );
     }
   }

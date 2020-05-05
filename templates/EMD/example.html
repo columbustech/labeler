@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" 
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    html {
+      border: 3px solid #4A274F;
+    }
+    #example-container {
+      padding: 10px;
+    }
+    .em-tuple {
+      border-color: #4A274F;
+      color: #4A274F;
+    }
+    .primary-text {
+      color: #4A274F;
+    }
+  </style>
+	<script
+		src="https://code.jquery.com/jquery-3.4.1.min.js"
+		integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+		crossorigin="anonymous">
+	</script>
+  <script src="https://unpkg.com/papaparse@5.1.1/papaparse.min.js"></script>
+</head>
+<body>
+  <div id="example-container">
+  </div>
+  <script>
+    var data, examples;
+
+    function getUrlParameter(name) {
+			name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+			var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+			var results = regex.exec(location.search);
+			return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+		}
+
+    function createHtmlTable(colNames, rowData) {
+      var table = $('<table>').addClass("em-tuple table table-bordered");
+      var header = $('<tr>');
+      colNames.forEach(colName => {
+        var cell = $('<th>').text(colName);
+        header.append(cell);
+      });
+      table.append(header);
+
+      var row = $('<tr>');
+      rowData.forEach(cellValue => {
+        var cell = $('<td>').text(cellValue);
+        row.append(cell);
+      });
+      table.append(row);
+      return table;
+    }
+
+    function getData() {
+      Papa.parse("data.csv", {
+        download: true,
+        complete: function(results) {
+          data = results;
+          
+          var eid = getUrlParameter("id");
+          var row = examples["data"].filter(row => row[0] === eid)[0]
+          var aid = row[1];
+          var bid = row[2];
+
+          var tupleHeader = $('<h1>').text('Do the two tuples match?').addClass('h5 mb-4 text-center primary-text');
+          $('#example-container').append(tupleHeader);
+          tableAHtml = createHtmlTable(data["data"][0], data["data"].filter(drow => drow[0] === aid)[0]);
+          $("#example-container").append(tableAHtml);
+          tableBHtml = createHtmlTable(data["data"][0], data["data"].filter(drow => drow[0] === bid)[0]);
+          $("#example-container").append(tableBHtml);
+        }
+      });
+    }
+
+    Papa.parse("examples.csv", {
+      download: true,
+      complete: function(results) {
+        examples = results;
+        getData();
+      }
+    });
+  </script>
+</body>
+</html>
