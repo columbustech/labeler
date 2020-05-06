@@ -4,6 +4,7 @@ const request = require('request');
 const fs = require('fs');
 const mongo = require('mongodb').MongoClient;
 const csv = require('csv-parser');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const mongoUrl = 'mongodb://localhost:27017';
 const publicPath = '/storage/public/';
 const templatesPath = '/storage/templates/';
@@ -69,6 +70,32 @@ function cDriveDownload(cDrivePath, localPath, accessToken) {
   });
 }
 
+function cDriveUploadCsv(localPath, cDrivePath, accessToken) {
+  return new Promise(resolve => {
+    var file_name = localPath.split("/").pop();
+    const uploadOptions = {
+      url: `http://cdrive/upload/`,
+      method: 'POST',
+      formData: {
+        path: cDrivePath,
+        file: {
+          value: fs.createReadStream(localPath),
+          options: {
+            filename: file_name,
+            contentType: 'text/csv'
+          }
+        }
+      },
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    };
+    request(uploadOptions, function(uploadErr, uploadRes, uploadBody) {
+      resolve(true);
+    });
+  });
+}
+
 router.post('/create-task', function(req, res) {
   var accessToken = req.headers["authorization"].split(" ")[1];
 
@@ -95,7 +122,7 @@ router.post('/create-task', function(req, res) {
         });
       }).on('end', () => {
         const collection = db.collection('tasks');
-        collection.insertOne({taskName: taskName, count: exampleCount, completionUrl: completionUrl, outputPath: outputPath, outputName: outputName}, (insErr, insRes) => {
+        collection.insertOne({taskName: taskName, count: exampleCount, completionUrl: completionUrl, outputPath: outputPath, outputName: outputName, retId: retId}, (insErr, insRes) => {
           resolve(true);
         });
       });
@@ -136,6 +163,38 @@ router.get('/next-example', function(req, res) {
 			});
 		}
 	});
+});
+
+router.post('/complete-task', function(req, res) {
+  var accessToken = req.headers["authorization"].split(" ")[1];
+  var taskName = req.body.taskName;
+
+  function saveLabels(results, fileName) {
+    const csvWriter = createCsvWriter({
+      path: `${publicPath}${taskName}/${fileName}`,
+      header: [
+        {id: 'exampleNo', title: 'id'},
+        {id: 'label', title: 'label'}
+      ]
+    });
+    return csvWriter.writeRecords(results);
+  }
+
+  db.collection("tasks").findOne({taskName: taskName}, function(findErr, findDoc) {
+    const p1 = db.collection(taskName).find({}).toArray().then(results => saveLabels(results, findDoc.outputName))
+    p1.then(() => cDriveUploadCsv(`${publicPath}${taskName}/${findDoc.outputName}`, findDoc.outputPath, accessToken)).then(() => {
+      var options = {
+        url: findDoc.completionUrl,
+        method: "POST",
+        form: {
+          retId: findDoc.retId
+        }
+      };
+      request(options, function(compErr, compRes, compBody){
+        res.json({redirectUrl: JSON.parse(compBody).redirectUrl});
+      });
+    });
+  });
 });
 
 router.get('/task-stats', function(req, res) {

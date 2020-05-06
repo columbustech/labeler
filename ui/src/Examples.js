@@ -2,6 +2,7 @@ import React from 'react';
 import axios from 'axios';
 import { Redirect, Link } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
+import Cookies from 'universal-cookie';
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import './Examples.css';
@@ -21,6 +22,7 @@ class Examples extends React.Component {
       labelCounts: [],
     };
     this.nextExample = this.nextExample.bind(this);
+    this.completeTask = this.completeTask.bind(this);
     this.labelExample = this.labelExample.bind(this);
     this.updateStats = this.updateStats.bind(this);
     this.deleteTask = this.deleteTask.bind(this);
@@ -49,13 +51,32 @@ class Examples extends React.Component {
     request.then(
       response => {
         if(response.data.exampleNo === -1) {
-          this.setState({isComplete: true});
+          this.completeTask();
         } else {
           this.setState({exampleNo: response.data.exampleNo});
           this.updateStats();
         }
       },
     );
+  }
+  completeTask() {
+    const cookies = new Cookies();
+    this.setState({isComplete: true});
+    const request = axios({
+      method: 'POST',
+      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/complete-task`,
+      data: {
+        taskName: this.state.taskName,
+      },
+      headers: {
+        'Authorization': `Bearer ${cookies.get('labeler_token')}`,
+      }
+    });
+    request.then(
+      response => {
+        window.location.href = response.data.redirectUrl;
+      },
+    )
   }
   updateStats() {
     const request = axios({
