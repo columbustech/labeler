@@ -10,14 +10,16 @@ class App extends React.Component {
     super(props);
     this.state = {
       taskName: "",
+      redirect: false,
       specs: {},
-      pageReady: false,
+      isLoggedIn: false,
     };
+    this.getSpecs = this.getSpecs.bind(this);
     this.authenticateUser = this.authenticateUser.bind(this);
     this.getLatestTask = this.getLatestTask.bind(this);
     this.userDetails = this.userDetails.bind(this);
   }
-  componentDidMount() {
+  getSpecs() {
     const request = axios({
       method: 'GET',
       url: `${process.env.PUBLIC_URL}/api/specs/`
@@ -25,7 +27,6 @@ class App extends React.Component {
     request.then(
       response => {
         this.setState({"specs": response.data});
-        this.authenticateUser();
       },
     );
   }
@@ -53,7 +54,7 @@ class App extends React.Component {
       request.then(
         response => {
           cookies.set('labeler_token', response.data.access_token);
-          this.getLatestTask();
+          this.setState({isLoggedIn: true});
         }, err => {
         }
       );
@@ -69,7 +70,7 @@ class App extends React.Component {
       }
     });
     request.then(response => {
-      this.getLatestTask();
+      this.setState({isLoggedIn: true});
     }, err => {
         cookies.remove('labeler_token'); 
         window.location.reload(false);
@@ -87,41 +88,48 @@ class App extends React.Component {
     request.then(response => {
       this.setState({
         taskName: response.data.taskName,
-        pageReady: true
+        redirect: true
       });
     }, err => {
     });
   }
   render() {
-    if (!this.state.pageReady) {
+    if (Object.keys(this.state.specs).length === 0) {
+      this.getSpecs();
       return (null);
+    } else if (!this.state.isLoggedIn) {
+      this.authenticateUser();
+      return (null);
+    } else if (this.state.redirect && (this.state.taskName !== "")) {
+      return (
+        <Redirect to={`/example/${this.state.taskName}`}/>
+      );
+    } else if (this.state.redirect) {
+      return (
+        <Redirect to="/home/" />
+      );
     } else {
       var url = new URL(process.env.PUBLIC_URL);
-      let redirect;
-      if (this.state.taskName === "") {
-        redirect = (
-          <Redirect from="/" to="/home/" />
-        );
+      var currentUrl = new URL(window.location.href);
+      if (url.pathname === currentUrl.pathname) {
+        this.getLatestTask();
+        return (null);
       } else {
-        redirect = (
-          <Redirect from="/" to={`/example/${this.state.taskName}`} />
+        return (
+          <Router basename={url.pathname} >
+            <Switch>
+              <Route
+                path="/example/:taskName"
+                render={(props) => <Examples {...props} specs={this.state.specs} />}
+              />
+              <Route
+                path="/home/"
+                render={(props) => <Home {...props} specs={this.state.specs} />}
+              />
+            </Switch>
+          </Router>
         );
       }
-      return (
-        <Router basename={url.pathname} >
-          <Switch>
-            <Route
-              path="/example/:taskName"
-              render={(props) => <Examples {...props} specs={this.state.specs} />}
-            />
-            <Route
-              path="/home/"
-              render={(props) => <Home {...props} specs={this.state.specs} />}
-            />
-            {redirect}
-          </Switch>
-        </Router>
-      );
     }
   }
 }

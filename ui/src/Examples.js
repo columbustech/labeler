@@ -11,9 +11,6 @@ class Examples extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      redirect: false,
-      specs: {},
-      taskName: '',
       exampleNo: -1,
       isComplete: false,
       labelOptions: [],
@@ -21,14 +18,13 @@ class Examples extends React.Component {
       completeExamples: 0,
       labelCounts: [],
     };
+    this.getLabelOptions = this.getLabelOptions.bind(this);
     this.nextExample = this.nextExample.bind(this);
     this.completeTask = this.completeTask.bind(this);
     this.labelExample = this.labelExample.bind(this);
     this.updateStats = this.updateStats.bind(this);
-    this.deleteTask = this.deleteTask.bind(this);
-    this.clearLabels = this.clearLabels.bind(this);
   }
-  componentDidMount() {
+  getLabelOptions() {
 		const request = axios({
 			method: 'GET',
 			url: `${this.props.specs.cdriveUrl}app/${this.props.specs.username}/labeler/api/label-options?taskName=${this.props.match.params.taskName}`
@@ -36,8 +32,6 @@ class Examples extends React.Component {
 		request.then(
 			response => {
 				this.setState({
-					taskName: this.props.match.params.taskName,
-					specs: this.props.specs,
 					labelOptions: response.data.labels
 				});
 			},
@@ -46,7 +40,7 @@ class Examples extends React.Component {
   nextExample() {
     const request = axios({
       method: 'GET',
-      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/next-example?taskName=${this.state.taskName}`
+      url: `${this.props.specs.appUrl}api/next-example?taskName=${this.props.match.params.taskName}`
     });
     request.then(
       response => {
@@ -64,9 +58,9 @@ class Examples extends React.Component {
     this.setState({isComplete: true});
     const request = axios({
       method: 'POST',
-      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/complete-task`,
+      url: `${this.props.specs.appUrl}api/complete-task`,
       data: {
-        taskName: this.state.taskName,
+        taskName: this.props.match.params.taskName,
       },
       headers: {
         'Authorization': `Bearer ${cookies.get('labeler_token')}`,
@@ -81,7 +75,7 @@ class Examples extends React.Component {
   updateStats() {
     const request = axios({
       method: 'GET',
-      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/task-stats?taskName=${this.state.taskName}`,
+      url: `${this.props.specs.appUrl}api/task-stats?taskName=${this.props.match.params.taskName}`,
     });
     request.then(
       response => {
@@ -103,9 +97,9 @@ class Examples extends React.Component {
   labelExample(label) {
     const request = axios({
       method: 'POST',
-      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/label-example`,
+      url: `${this.props.specs.appUrl}api/label-example`,
       data: {
-        taskName: this.state.taskName,
+        taskName: this.props.match.params.taskName,
         exampleNo: this.state.exampleNo,
         label: label
       }
@@ -116,36 +110,9 @@ class Examples extends React.Component {
       },
     );
   }
-  deleteTask() {
-    const request = axios({
-      method: 'POST',
-      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/delete`,
-      data: {
-        taskName: this.state.taskName
-      }
-    });
-    request.then(
-      response => {
-        this.setState({redirect: true});
-      },
-    );
-  }
-  clearLabels() {
-    const request = axios({
-      method: 'POST',
-      url: `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/clear`,
-      data: {
-        taskName: this.state.taskName
-      }
-    });
-    request.then(
-      response => {
-        this.nextExample();
-      },
-    );
-  }
   render() {
-    if (Object.keys(this.state.specs).length === 0) {
+    if (this.state.labelOptions.length === 0) {
+      this.getLabelOptions();
       return (null);
     } else if (this.state.isComplete) {
 			return(null);
@@ -163,45 +130,13 @@ class Examples extends React.Component {
           </div>
         );
       });
-      var iFrameSrc = `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/${this.state.taskName}/example.html?id=${this.state.exampleNo}`;
-      var ddItems = [];
-      var downloadUrl = `${this.state.specs.cdriveUrl}app/${this.state.specs.username}/labeler/api/download?taskName=${this.state.taskName}`;
-      ddItems.push(
-        <Link to={{pathname:"/monitor/", specs: this.state.specs, selectedTaskName: this.state.taskName}} className="dropdown-item">
-          Download (CDrive)
-        </Link>
-      );
-      ddItems.push(
-        <a href={downloadUrl} className="dropdown-item">
-          Download (Local)
-        </a>
-      );
-      ddItems.push(
-        <Dropdown.Item onClick={this.deleteTask} >
-          Delete Task
-        </Dropdown.Item>
-      );
-      ddItems.push(
-        <Dropdown.Item onClick={this.clearLabels} >
-          Clear Labels
-        </Dropdown.Item>
-      );
-      ddItems.push(
-        <Link to={{pathname:"/monitor/", specs: this.state.specs}} className="dropdown-item">
-          Back
-        </Link>
-      );
+      var iFrameSrc = `${this.props.specs.appUrl}${this.props.match.params.taskName}/example.html?id=${this.state.exampleNo}`;
       var labelStr = this.state.labelCounts.map(item => {
         return `${item.label}: ${item.count}`;
       }).join(',');
       return (
         <div className="example-container">
           <div className="examples-header">
-            <div className="actions-container">
-              <DropdownButton variant="transparent" title="Actions" alignLeft size="lg">
-                {ddItems}
-              </DropdownButton>
-            </div>
             <div className="stat-container">
               <h1 className="h5 m-2 header-text">Total: {this.state.totalExamples}, Completed: {this.state.completedExamples}, {labelStr}</h1>
             </div>
