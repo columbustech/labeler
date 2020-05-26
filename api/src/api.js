@@ -29,7 +29,9 @@ router.get('/specs', function(req, res) {
     authUrl: process.env.AUTHENTICATION_URL,
     cdriveUrl: process.env.CDRIVE_URL,
     cdriveApiUrl: process.env.CDRIVE_API_URL,
-    username: process.env.COLUMBUS_USERNAME
+    username: process.env.COLUMBUS_USERNAME,
+    appName: process.env.APP_NAME,
+    appUrl: process.env.APP_URL
   });
 });
 
@@ -122,7 +124,14 @@ router.post('/create-task', function(req, res) {
         });
       }).on('end', () => {
         const collection = db.collection('tasks');
-        collection.insertOne({taskName: taskName, count: exampleCount, completionUrl: completionUrl, outputPath: outputPath, outputName: outputName, retId: retId}, (insErr, insRes) => {
+        collection.insertOne({
+          taskName: taskName, 
+          count: exampleCount, 
+          completionUrl: completionUrl, 
+          outputPath: outputPath, 
+          outputName: outputName, 
+          retId: retId
+        }, (insErr, insRes) => {
           resolve(true);
         });
       });
@@ -257,6 +266,22 @@ router.post('/clear', function(req, res) {
     res.json({
       message: 'success'
     });
+  });
+});
+
+router.get('/latest-task', function(req, res) {
+  const collection = db.collection('tasks');
+  const promise = collection.find().sort({_id: -1}).limit(1).toArray();
+  promise.then((resp, err) => {
+    if (resp.length !== 0) {
+      res.json({
+        taskName: resp[0].taskName
+      });
+    } else {
+      res.json({
+        taskName: ""
+      });
+    }
   });
 });
 

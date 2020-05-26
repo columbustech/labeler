@@ -3,24 +3,37 @@ import Cookies from 'universal-cookie';
 import axios from 'axios';
 import Examples from './Examples';
 import Home from './Home';
+import { BrowserRouter as Router, Route, Switch, Redirect} from 'react-router-dom';
 
 class App extends React.Component {
   constructor(props){
     super(props);
     this.state = {
-      component: Home,
       taskName: "",
       specs: {},
-      isLoggedIn: false
+      pageReady: false,
     };
-    this.initPage = this.initPage.bind(this);
     this.authenticateUser = this.authenticateUser.bind(this);
+    this.getLatestTask = this.getLatestTask.bind(this);
+    this.userDetails = this.userDetails.bind(this);
+  }
+  componentDidMount() {
+    const request = axios({
+      method: 'GET',
+      url: `${process.env.PUBLIC_URL}/api/specs/`
+    });
+    request.then(
+      response => {
+        this.setState({"specs": response.data});
+        this.authenticateUser();
+      },
+    );
   }
   authenticateUser() {
     const cookies = new Cookies();
     var accessToken = cookies.get('labeler_token');
     if (accessToken !== undefined) {
-      this.setState({isLoggedIn: true});
+      this.userDetails();
       return;
     }
     var url = new URL(window.location.href);
@@ -40,43 +53,74 @@ class App extends React.Component {
       request.then(
         response => {
           cookies.set('labeler_token', response.data.access_token);
-          window.location.href = redirect_uri;
+          this.getLatestTask();
         }, err => {
         }
       );
     }
   }
-  initPage() {
-    var tokens = window.location.pathname.split('/');
-    var newState = {};
-    if ((tokens.length>5) && (tokens[4] === "example")) {
-      newState['component'] = Examples;
-      newState['taskName'] = tokens[5];
-    } else {
-      newState['component'] = Home;
-      newState['taskName'] = "";
-    }
+  userDetails() {
+    const cookies = new Cookies();
     const request = axios({
       method: 'GET',
-      url: `${window.location.protocol}//${window.location.hostname}/${tokens[1]}/${tokens[2]}/${tokens[3]}/api/specs`
+      url: `${this.state.specs.cdriveApiUrl}user-details/`,
+      headers: {
+        'Authorization': `Bearer ${cookies.get('labeler_token')}`,
+      }
     });
-    request.then(
-      response => {
-        newState['specs'] = response.data;
-        this.setState(newState);
-      },
-    );
+    request.then(response => {
+      this.getLatestTask();
+    }, err => {
+        cookies.remove('labeler_token'); 
+        window.location.reload(false);
+    });
+  }
+  getLatestTask() {
+    const cookies = new Cookies();
+    const request = axios({
+      method: 'GET',
+      url: `${this.state.specs.appUrl}api/latest-task`,
+      headers: {
+        'Authorization': `Bearer ${cookies.get('labeler_token')}`,
+      }
+    });
+    request.then(response => {
+      this.setState({
+        taskName: response.data.taskName,
+        pageReady: true
+      });
+    }, err => {
+    });
   }
   render() {
-    if (Object.keys(this.state.specs).length === 0) {
-      this.initPage();
-      return (null);
-    } else if (!this.state.isLoggedIn) {
-      this.authenticateUser();
+    if (!this.state.pageReady) {
       return (null);
     } else {
+      var url = new URL(process.env.PUBLIC_URL);
+      let redirect;
+      if (this.state.taskName === "") {
+        redirect = (
+          <Redirect from="/" to="/home/" />
+        );
+      } else {
+        redirect = (
+          <Redirect from="/" to={`/example/${this.state.taskName}`} />
+        );
+      }
       return (
-        <this.state.component specs={this.state.specs} taskName={this.state.taskName} />
+        <Router basename={url.pathname} >
+          <Switch>
+            <Route
+              path="/example/:taskName"
+              render={(props) => <Examples {...props} specs={this.state.specs} />}
+            />
+            <Route
+              path="/home/"
+              render={(props) => <Home {...props} specs={this.state.specs} />}
+            />
+            {redirect}
+          </Switch>
+        </Router>
       );
     }
   }

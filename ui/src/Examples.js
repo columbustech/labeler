@@ -31,12 +31,12 @@ class Examples extends React.Component {
   componentDidMount() {
 		const request = axios({
 			method: 'GET',
-			url: `${this.props.specs.cdriveUrl}app/${this.props.specs.username}/labeler/api/label-options?taskName=${this.props.taskName}`
+			url: `${this.props.specs.cdriveUrl}app/${this.props.specs.username}/labeler/api/label-options?taskName=${this.props.match.params.taskName}`
 		});
 		request.then(
 			response => {
 				this.setState({
-					taskName: this.props.taskName,
+					taskName: this.props.match.params.taskName,
 					specs: this.props.specs,
 					labelOptions: response.data.labels
 				});
@@ -206,7 +206,7 @@ class Examples extends React.Component {
               <h1 className="h5 m-2 header-text">Total: {this.state.totalExamples}, Completed: {this.state.completedExamples}, {labelStr}</h1>
             </div>
           </div>
-          <h1 className="h3 mb-3 font-weight-bold text-center header-text">Example No: {this.state.exampleNo}</h1>
+          <h1 className="h3 mb-3 font-weight-bold text-center header-text">Example No: {this.state.completedExamples + 1}</h1>
           <div className="example-iframe-container">
             <iframe title="example-iframe" src={iFrameSrc} width="800" height="500"></iframe>
           </div>
