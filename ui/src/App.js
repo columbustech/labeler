@@ -101,17 +101,43 @@ class App extends React.Component {
       this.authenticateUser();
       return (null);
     } else if (this.state.redirect && (this.state.taskName !== "")) {
+      var url = new URL(process.env.PUBLIC_URL);
       return (
-        <Redirect to={`/example/${this.state.taskName}`}/>
+        <Router basename={url.pathname} >
+          <Switch>
+            <Route
+              path="/example/:taskName"
+              render={(props) => <Examples {...props} specs={this.state.specs} />}
+            />
+            <Route
+              path="/home/"
+              render={(props) => <Home {...props} specs={this.state.specs} />}
+            />
+            <Redirect from="/" to={`/example/${this.state.taskName}`}/>
+          </Switch>
+        </Router>
       );
     } else if (this.state.redirect) {
+      url = new URL(process.env.PUBLIC_URL);
       return (
-        <Redirect to="/home/" />
+        <Router basename={url.pathname} >
+          <Switch>
+            <Route
+              path="/example/:taskName"
+              render={(props) => <Examples {...props} specs={this.state.specs} />}
+            />
+            <Route
+              path="/home/"
+              render={(props) => <Home {...props} specs={this.state.specs} />}
+            />
+            <Redirect from="/" to="/home/" />
+          </Switch>
+        </Router>
       );
     } else {
-      var url = new URL(process.env.PUBLIC_URL);
+      url = new URL(process.env.PUBLIC_URL);
       var currentUrl = new URL(window.location.href);
-      if (url.pathname === currentUrl.pathname) {
+      if (url.pathname + '/' === currentUrl.pathname) {
         this.getLatestTask();
         return (null);
       } else {
